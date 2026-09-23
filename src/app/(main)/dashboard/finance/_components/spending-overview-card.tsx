@@ -5,7 +5,14 @@ import { useState } from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import type { MonthPoint, YearPoint } from "./finance-data";
@@ -13,14 +20,15 @@ import { formatEur } from "./format";
 
 type View = "monthly" | "yearly";
 
+// Same money-in green / money-out red as the Monthly Breakdown table.
 const chartConfig = {
-  withdrawals: {
-    color: "var(--chart-4)",
-    label: "Withdrawals",
-  },
   deposits: {
-    color: "var(--chart-2)",
+    color: "var(--color-green-500)",
     label: "Deposits",
+  },
+  withdrawals: {
+    color: "var(--destructive)",
+    label: "Withdrawals",
   },
 } satisfies ChartConfig;
 
@@ -79,21 +87,23 @@ export function SpendingOverviewCard({ months, years }: { months: MonthPoint[]; 
                   />
                 )}
               />
+              <ChartLegend content={<ChartLegendContent />} />
+              {/* Dash on deposits keeps the series apart for red/green colour blindness. */}
               <Line
                 dataKey="deposits"
-                dot={false}
+                dot={{ r: 3, fill: "var(--color-deposits)" }}
                 stroke="var(--color-deposits)"
-                strokeDasharray="5 5"
+                strokeDasharray="6 4"
                 strokeLinecap="round"
-                strokeWidth={1.5}
+                strokeWidth={2.5}
                 type="monotone"
               />
               <Line
                 dataKey="withdrawals"
-                dot={false}
+                dot={{ r: 3, fill: "var(--color-withdrawals)" }}
                 stroke="var(--color-withdrawals)"
                 strokeLinecap="round"
-                strokeWidth={3}
+                strokeWidth={2.5}
                 type="monotone"
               />
             </LineChart>
@@ -116,6 +126,7 @@ export function SpendingOverviewCard({ months, years }: { months: MonthPoint[]; 
                   />
                 )}
               />
+              <ChartLegend content={<ChartLegendContent />} />
               <Bar dataKey="deposits" fill="var(--color-deposits)" radius={4} />
               <Bar dataKey="withdrawals" fill="var(--color-withdrawals)" radius={4} />
             </BarChart>
