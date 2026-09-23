@@ -20,10 +20,10 @@ import { formatEur } from "./format";
 
 type View = "monthly" | "yearly";
 
-// Same money-in green / money-out red as the Monthly Breakdown table.
+// Same colours as the Monthly Breakdown net column: text-green-700 dark:text-green-300 / text-destructive.
 const chartConfig = {
   deposits: {
-    color: "var(--color-green-500)",
+    theme: { light: "var(--color-green-700)", dark: "var(--color-green-300)" },
     label: "Deposits",
   },
   withdrawals: {
