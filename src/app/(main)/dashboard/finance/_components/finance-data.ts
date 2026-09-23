@@ -46,8 +46,8 @@ export type BankDashboard = {
   latestLabel: string;
 };
 
-const monthLabel = new Intl.DateTimeFormat("en-IE", { month: "short", year: "numeric", timeZone: "UTC" });
-const monthShortLabel = new Intl.DateTimeFormat("en-IE", { month: "short", timeZone: "UTC" });
+const monthLabel = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+const monthShortLabel = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" });
 function toneOf(value: number, higherIsBetter = true): Tone {
   if (value === 0) return "neutral";
   return value > 0 === higherIsBetter ? "positive" : "negative";
