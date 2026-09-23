@@ -1,13 +1,11 @@
 import Link from "next/link";
 
 const includedScreens = [
+  { name: "Default", href: "/dashboard/default" },
   { name: "Analytics", href: "/dashboard/analytics" },
   { name: "CRM", href: "/dashboard/crm" },
   { name: "Finance", href: "/dashboard/finance" },
-  { name: "E-commerce", href: "/dashboard/ecommerce" },
   { name: "Productivity", href: "/dashboard/productivity" },
-  { name: "File manager", href: "/dashboard/file-manager" },
-  { name: "Calendar", href: "/dashboard/calendar" },
 ];
 
 const editions = [
