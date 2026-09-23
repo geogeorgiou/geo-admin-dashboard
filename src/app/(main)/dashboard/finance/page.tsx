@@ -1,27 +1,22 @@
 import { format } from "date-fns";
-import { Download, RotateCw, Settings2 } from "lucide-react";
+import { CalendarCheck } from "lucide-react";
 import type { Metadata } from "next";
 
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { BalanceDistributionCard } from "./_components/balance-distribution-card";
-import { FinanceNotification } from "./_components/finance-notification";
-import { IncomeBreakdown } from "./_components/income-breakdown";
+import { getBankDashboards } from "./_components/finance-data";
+import { MonthlyBreakdownCard } from "./_components/monthly-breakdown-card";
 import { OverviewKpis } from "./_components/overview-kpis";
-import { QuickActions } from "./_components/quick-actions";
-import { TransactionsOverviewCard } from "./_components/transactions-overview-card";
-import { UpcomingTransactions } from "./_components/upcoming-transactions";
-import { Wallet } from "./_components/wallet";
+import { SpendingOverviewCard } from "./_components/spending-overview-card";
 
 export const metadata: Metadata = {
-  title: "Open Source Finance Dashboard with shadcn/ui",
-  description:
-    "Explore an open source personal finance dashboard with net worth, spending, income sources, account allocation, transactions, and wallets.",
+  title: "Finance",
+  description: "Monthly deposits, withdrawals, and savings rate per bank.",
 };
 
-export default function Page() {
+export default async function Page() {
   const formattedDate = format(new Date(), "EEEE, do MMMM yyyy");
+  const banks = await getBankDashboards();
 
   return (
     <div className="flex flex-col gap-4">
@@ -30,76 +25,46 @@ export default function Page() {
         <p className="text-muted-foreground text-sm">{formattedDate}</p>
       </div>
 
-      <Tabs defaultValue="30-days" className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      {banks.length === 0 ? (
+        <div className="flex h-64 flex-col items-center justify-center gap-1 rounded-xl border border-border border-dashed text-center text-muted-foreground">
+          <p>No monthly flows yet.</p>
+          <p className="text-xs">
+            Run <code className="font-mono">npm run seed:finances</code> to load them.
+          </p>
+        </div>
+      ) : (
+        <Tabs defaultValue={banks[0].institution} className="flex flex-col gap-4">
           <TabsList variant="line">
-            <TabsTrigger value="30-days">Dashboard</TabsTrigger>
-            <TabsTrigger value="12-months">Accounts</TabsTrigger>
-            <TabsTrigger value="custom">Transactions</TabsTrigger>
+            {banks.map((bank) => (
+              <TabsTrigger key={bank.institution} value={bank.institution}>
+                {bank.institution} Dashboard
+              </TabsTrigger>
+            ))}
           </TabsList>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-              <RotateCw className="size-4" />
-              <span>Updated 5 min ago</span>
-            </div>
-            <Button size="sm" variant="outline">
-              <Settings2 />
-              Settings
-            </Button>
-            <Button size="sm" variant="outline">
-              <Download data-icon="inline-start" />
-              Export
-            </Button>
-          </div>
-        </div>
+          {banks.map((bank) => (
+            <TabsContent key={bank.institution} value={bank.institution} className="flex flex-col gap-4">
+              <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                <CalendarCheck className="size-4" />
+                <span>
+                  Latest entry: {bank.latestLabel} · {bank.accountCount} account{bank.accountCount === 1 ? "" : "s"}
+                </span>
+              </div>
 
-        <TabsContent value="30-days" className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <div className="xl:col-span-6">
-              <OverviewKpis />
-            </div>
+              <OverviewKpis kpis={bank.kpis} />
 
-            <div className="flex flex-col gap-4 xl:col-span-6">
-              <IncomeBreakdown />
-              <FinanceNotification />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <div className="xl:col-span-7">
-              <TransactionsOverviewCard />
-            </div>
-            <div className="xl:col-span-5">
-              <BalanceDistributionCard />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <div className="xl:col-span-4">
-              <Wallet />
-            </div>
-            <div className="xl:col-span-4">
-              <UpcomingTransactions />
-            </div>
-            <div className="xl:col-span-4">
-              <QuickActions />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="12-months">
-          <div className="flex h-64 items-center justify-center rounded-xl border border-border border-dashed text-muted-foreground">
-            Accounts view coming soon.
-          </div>
-        </TabsContent>
-
-        <TabsContent value="custom">
-          <div className="flex h-64 items-center justify-center rounded-xl border border-border border-dashed text-muted-foreground">
-            Transactions view coming soon.
-          </div>
-        </TabsContent>
-      </Tabs>
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                <div className="xl:col-span-7">
+                  <SpendingOverviewCard months={bank.months} years={bank.years} />
+                </div>
+                <div className="xl:col-span-5">
+                  <MonthlyBreakdownCard months={bank.months} />
+                </div>
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
     </div>
   );
 }

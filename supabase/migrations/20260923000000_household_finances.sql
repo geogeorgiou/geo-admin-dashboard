@@ -67,6 +67,8 @@ create table public.monthly_flows (
   -- Money moved between the household's own accounts; excluded from net.
   transfers_in numeric(14, 2) not null default 0 check (transfers_in >= 0),
   transfers_out numeric(14, 2) not null default 0 check (transfers_out >= 0),
+  -- Optional month-end balance from the statement. Can be negative (credit cards).
+  closing_balance numeric(14, 2),
   note text,
   created_by uuid references auth.users (id) on delete set null,
   updated_by uuid references auth.users (id) on delete set null,
@@ -400,6 +402,7 @@ select
   f.withdrawals,
   f.transfers_in,
   f.transfers_out,
+  f.closing_balance,
   f.deposits - f.withdrawals as net,
   f.deposits + f.transfers_in - f.withdrawals - f.transfers_out as net_with_transfers,
   f.note
@@ -418,7 +421,10 @@ select
   sum(f.withdrawals) as withdrawals,
   sum(f.deposits) - sum(f.withdrawals) as net,
   -- Should be zero when every transfer stays inside the household.
-  sum(f.transfers_in) - sum(f.transfers_out) as unmatched_transfers
+  sum(f.transfers_in) - sum(f.transfers_out) as unmatched_transfers,
+  -- Null until at least one account has a balance; partial when only some do.
+  count(f.closing_balance)::int as balances_reported,
+  sum(f.closing_balance) as closing_balance
 from public.monthly_flows f
 join public.accounts a on a.id = f.account_id
 group by a.household_id, f.month;

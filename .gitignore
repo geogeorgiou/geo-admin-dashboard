@@ -35,3 +35,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# real finance seed data (the repo is public)
+/supabase/seed/*.json
+!/supabase/seed/*.example.json
+/montly_flows.json
