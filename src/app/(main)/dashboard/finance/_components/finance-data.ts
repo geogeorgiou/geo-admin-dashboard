@@ -13,7 +13,12 @@ export type MonthPoint = {
   deposits: number;
   withdrawals: number;
   net: number;
+  // Deposits and withdrawals plus transfers between the household's own accounts.
+  netWithTransfers: number;
   closingBalance: number | null;
+  // Month-end balance: the recorded closingBalance, or estimated by rolling flows from the nearest one.
+  balance: number | null;
+  balanceEstimated: boolean;
   note: string | null;
 };
 
@@ -41,6 +46,8 @@ export type FlowEntry = {
   month: string;
   deposits: number;
   withdrawals: number;
+  transfersIn: number;
+  transfersOut: number;
   closingBalance: number | null;
   note: string | null;
 };
@@ -103,6 +110,7 @@ function buildMonths(entries: FlowEntry[]): MonthPoint[] {
     const date = new Date(`${month}T00:00:00Z`);
     const deposits = entry?.deposits ?? 0;
     const withdrawals = entry?.withdrawals ?? 0;
+    const transfers = (entry?.transfersIn ?? 0) - (entry?.transfersOut ?? 0);
 
     months.push({
       month,
@@ -113,9 +121,43 @@ function buildMonths(entries: FlowEntry[]): MonthPoint[] {
       deposits,
       withdrawals,
       net: deposits - withdrawals,
+      netWithTransfers: deposits - withdrawals + transfers,
       closingBalance: entry?.closingBalance ?? null,
+      balance: entry?.closingBalance ?? null,
+      balanceEstimated: false,
       note: entry?.note ?? null,
     });
+  }
+
+  return deriveBalances(months);
+}
+
+const toCents = (value: number) => Math.round(value * 100);
+
+// Fills balance for months without a recorded closingBalance: forward from the latest earlier anchor
+// (balance += net), backward from the first anchor (balance -= next month's net). A month that was
+// not entered breaks the chain, since its flows are unknown.
+function deriveBalances(months: MonthPoint[]): MonthPoint[] {
+  let running: number | null = null;
+  for (const point of months) {
+    if (point.closingBalance !== null) {
+      running = toCents(point.closingBalance);
+    } else if (running !== null && point.entered) {
+      running += toCents(point.netWithTransfers);
+      point.balance = running / 100;
+      point.balanceEstimated = true;
+    } else {
+      running = null;
+    }
+  }
+
+  const firstAnchor = months.findIndex((point) => point.closingBalance !== null);
+  for (let index = firstAnchor - 1; index >= 0; index--) {
+    const next = months[index + 1];
+    const point = months[index];
+    if (!point.entered || !next.entered || next.balance === null) break;
+    point.balance = (toCents(next.balance) - toCents(next.netWithTransfers)) / 100;
+    point.balanceEstimated = true;
   }
 
   return months;
@@ -150,17 +192,18 @@ function buildKpis(months: MonthPoint[]): Kpi[] {
   const previous = entered[entered.length - 2];
   const lastYear = entered.slice(-12);
 
+  const anchor = [...entered].reverse().find((month) => month.closingBalance !== null);
   const netWorth: Kpi =
-    latest.closingBalance !== null
+    latest.balance !== null
       ? {
-          title: "Net worth",
-          value: formatEur(latest.closingBalance),
+          title: "Balance",
+          value: formatEur(latest.balance),
           detail:
-            previous?.closingBalance != null
-              ? `${formatEur(latest.closingBalance - previous.closingBalance, { signed: true })} vs ${previous.shortLabel}`
-              : `Month-end balance, ${latest.label}`,
-          badge: formatEur(latest.net, { signed: true }),
-          tone: toneOf(latest.net),
+            latest.balanceEstimated && anchor
+              ? `Estimated from ${anchor.label} balance`
+              : `Recorded balance, ${latest.label}`,
+          badge: `${formatEur(latest.netWithTransfers, { signed: true })} in ${latest.shortLabel}`,
+          tone: toneOf(latest.netWithTransfers),
         }
       : {
           title: "Net change",
@@ -229,7 +272,7 @@ export async function getFinanceDashboard(): Promise<FinanceDashboard> {
     supabase.from("accounts").select("id, name, institution").eq("household_id", householdId).is("archived_at", null),
     supabase
       .from("monthly_account_summary")
-      .select("account_id, month, deposits, withdrawals, closing_balance, note")
+      .select("account_id, month, deposits, withdrawals, transfers_in, transfers_out, closing_balance, note")
       .eq("household_id", householdId)
       .order("month", { ascending: true }),
   ]);
@@ -242,6 +285,8 @@ export async function getFinanceDashboard(): Promise<FinanceDashboard> {
       month: row.month,
       deposits: Number(row.deposits),
       withdrawals: Number(row.withdrawals),
+      transfersIn: Number(row.transfers_in),
+      transfersOut: Number(row.transfers_out),
       closingBalance: row.closing_balance === null ? null : Number(row.closing_balance),
       note: row.note,
     };

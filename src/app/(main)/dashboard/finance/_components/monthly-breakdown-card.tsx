@@ -20,7 +20,7 @@ export function MonthlyBreakdownCard({ accountId, accountName, months }: Monthly
     <Card className="h-full">
       <CardHeader>
         <CardTitle className="font-normal">Monthly Breakdown</CardTitle>
-        <CardDescription>Newest first. Hover a note to read it in full.</CardDescription>
+        <CardDescription>Newest first. ≈ balances are estimated from the nearest recorded one.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="max-h-72 overflow-y-auto">
@@ -31,6 +31,7 @@ export function MonthlyBreakdownCard({ accountId, accountName, months }: Monthly
                 <TableHead className="text-right">Deposits</TableHead>
                 <TableHead className="text-right">Withdrawals</TableHead>
                 <TableHead className="text-right">Net</TableHead>
+                <TableHead className="text-right">Balance</TableHead>
                 <TableHead className="w-8">
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -59,6 +60,14 @@ export function MonthlyBreakdownCard({ accountId, accountName, months }: Monthly
                     >
                       {formatEur(month.net, { signed: true })}
                     </TableCell>
+                    <TableCell
+                      className={cn("text-right tabular-nums", month.balanceEstimated && "text-muted-foreground")}
+                      title={month.balanceEstimated ? "Estimated from the nearest recorded balance" : undefined}
+                    >
+                      {month.balance === null
+                        ? "—"
+                        : `${month.balanceEstimated ? "≈ " : ""}${formatEur(month.balance)}`}
+                    </TableCell>
                     <TableCell className="w-8 pl-0 text-right">
                       <DeleteMonthlyFlowButton
                         accountId={accountId}
@@ -71,7 +80,7 @@ export function MonthlyBreakdownCard({ accountId, accountName, months }: Monthly
                 ) : (
                   <TableRow key={month.month} className="text-muted-foreground">
                     <TableCell>{month.label}</TableCell>
-                    <TableCell colSpan={4} className="text-right text-xs italic">
+                    <TableCell colSpan={5} className="text-right text-xs italic">
                       Not entered
                     </TableCell>
                   </TableRow>
