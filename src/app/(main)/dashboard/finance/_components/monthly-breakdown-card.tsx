@@ -3,10 +3,17 @@ import { cn } from "cn";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+import { DeleteMonthlyFlowButton } from "./delete-monthly-flow-button";
 import type { MonthPoint } from "./finance-data";
 import { formatEur } from "./format";
 
-export function MonthlyBreakdownCard({ months }: { months: MonthPoint[] }) {
+type MonthlyBreakdownCardProps = {
+  accountId: string;
+  accountName: string;
+  months: MonthPoint[];
+};
+
+export function MonthlyBreakdownCard({ accountId, accountName, months }: MonthlyBreakdownCardProps) {
   const rows = [...months].reverse();
 
   return (
@@ -24,6 +31,9 @@ export function MonthlyBreakdownCard({ months }: { months: MonthPoint[] }) {
                 <TableHead className="text-right">Deposits</TableHead>
                 <TableHead className="text-right">Withdrawals</TableHead>
                 <TableHead className="text-right">Net</TableHead>
+                <TableHead className="w-8">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -49,11 +59,19 @@ export function MonthlyBreakdownCard({ months }: { months: MonthPoint[] }) {
                     >
                       {formatEur(month.net, { signed: true })}
                     </TableCell>
+                    <TableCell className="w-8 pl-0 text-right">
+                      <DeleteMonthlyFlowButton
+                        accountId={accountId}
+                        accountName={accountName}
+                        month={month.month}
+                        label={month.label}
+                      />
+                    </TableCell>
                   </TableRow>
                 ) : (
                   <TableRow key={month.month} className="text-muted-foreground">
                     <TableCell>{month.label}</TableCell>
-                    <TableCell colSpan={3} className="text-right text-xs italic">
+                    <TableCell colSpan={4} className="text-right text-xs italic">
                       Not entered
                     </TableCell>
                   </TableRow>

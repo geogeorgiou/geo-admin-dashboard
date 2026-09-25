@@ -37,13 +37,35 @@ export type Kpi = {
   tone: Tone;
 };
 
-export type BankDashboard = {
+export type FlowEntry = {
+  month: string;
+  deposits: number;
+  withdrawals: number;
+  closingBalance: number | null;
+  note: string | null;
+};
+
+export type AccountOption = {
+  id: string;
+  name: string;
   institution: string;
-  accountCount: number;
+  entries: FlowEntry[];
+};
+
+export type AccountDashboard = {
+  accountId: string;
+  accountName: string;
+  institution: string;
   months: MonthPoint[];
   years: YearPoint[];
   kpis: Kpi[];
-  latestLabel: string;
+  latestLabel: string | null;
+};
+
+export type FinanceDashboard = {
+  accounts: AccountOption[];
+  dashboards: AccountDashboard[];
+  firstYear: number;
 };
 
 const monthLabel = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
@@ -68,41 +90,31 @@ function addMonths(month: string, count: number) {
   return date.toISOString().slice(0, 10);
 }
 
-function buildMonths(rows: FlowRow[], activeAccounts: number): MonthPoint[] {
-  const byMonth = new Map<string, FlowRow[]>();
-  for (const row of rows) {
-    byMonth.set(row.month, [...(byMonth.get(row.month) ?? []), row]);
-  }
+function buildMonths(entries: FlowEntry[]): MonthPoint[] {
+  if (entries.length === 0) return [];
 
-  const sorted = [...byMonth.keys()].sort();
+  const byMonth = new Map(entries.map((entry) => [entry.month, entry]));
+  const first = entries[0].month;
+  const last = entries[entries.length - 1].month;
   const months: MonthPoint[] = [];
 
-  for (let month = sorted[0]; month <= sorted[sorted.length - 1]; month = addMonths(month, 1)) {
-    const entries = byMonth.get(month) ?? [];
-    const deposits = entries.reduce((sum, row) => sum + row.deposits, 0);
-    const withdrawals = entries.reduce((sum, row) => sum + row.withdrawals, 0);
-    const balances = entries.flatMap((row) => (row.closing_balance === null ? [] : [row.closing_balance]));
+  for (let month = first; month <= last; month = addMonths(month, 1)) {
+    const entry = byMonth.get(month);
     const date = new Date(`${month}T00:00:00Z`);
+    const deposits = entry?.deposits ?? 0;
+    const withdrawals = entry?.withdrawals ?? 0;
 
     months.push({
       month,
       period: month.slice(0, 7),
       label: monthLabel.format(date),
       shortLabel: monthShortLabel.format(date),
-      entered: entries.length > 0,
+      entered: entry !== undefined,
       deposits,
       withdrawals,
       net: deposits - withdrawals,
-      // Only a real net worth when every active account reported a balance.
-      closingBalance:
-        balances.length > 0 && balances.length >= activeAccounts
-          ? balances.reduce((sum, value) => sum + value, 0)
-          : null,
-      note:
-        entries
-          .map((row) => row.note)
-          .filter(Boolean)
-          .join(" · ") || null,
+      closingBalance: entry?.closingBalance ?? null,
+      note: entry?.note ?? null,
     });
   }
 
@@ -134,6 +146,7 @@ function buildYears(months: MonthPoint[]): YearPoint[] {
 function buildKpis(months: MonthPoint[]): Kpi[] {
   const entered = months.filter((month) => month.entered);
   const latest = entered[entered.length - 1];
+  if (!latest) return [];
   const previous = entered[entered.length - 2];
   const lastYear = entered.slice(-12);
 
@@ -192,16 +205,6 @@ function buildKpis(months: MonthPoint[]): Kpi[] {
   return [netWorth, monthlySpend, savings];
 }
 
-type FlowRow = {
-  account_id: string;
-  institution: string | null;
-  month: string;
-  deposits: number;
-  withdrawals: number;
-  closing_balance: number | null;
-  note: string | null;
-};
-
 async function resolveHouseholdId(supabase: ReturnType<typeof createAdminClient>) {
   const configured = process.env.FINANCE_HOUSEHOLD_ID;
   if (configured) return configured;
@@ -216,41 +219,58 @@ async function resolveHouseholdId(supabase: ReturnType<typeof createAdminClient>
   return data[0]?.id ?? null;
 }
 
-export async function getBankDashboards(): Promise<BankDashboard[]> {
+export async function getFinanceDashboard(): Promise<FinanceDashboard> {
+  const currentYear = new Date().getUTCFullYear();
   const supabase = createAdminClient();
   const householdId = await resolveHouseholdId(supabase);
-  if (!householdId) return [];
+  if (!householdId) return { accounts: [], dashboards: [], firstYear: currentYear };
 
   const [accountsResult, flowsResult] = await Promise.all([
-    supabase.from("accounts").select("id, institution, archived_at").eq("household_id", householdId),
+    supabase.from("accounts").select("id, name, institution").eq("household_id", householdId).is("archived_at", null),
     supabase
       .from("monthly_account_summary")
-      .select("account_id, institution, month, deposits, withdrawals, closing_balance, note")
+      .select("account_id, month, deposits, withdrawals, closing_balance, note")
       .eq("household_id", householdId)
       .order("month", { ascending: true }),
   ]);
   if (accountsResult.error) throw new Error(`Failed to load accounts: ${accountsResult.error.message}`);
   if (flowsResult.error) throw new Error(`Failed to load monthly flows: ${flowsResult.error.message}`);
 
-  const byInstitution = new Map<string, FlowRow[]>();
+  const entriesByAccount = new Map<string, FlowEntry[]>();
   for (const row of flowsResult.data) {
-    const institution = row.institution ?? "Other";
-    byInstitution.set(institution, [...(byInstitution.get(institution) ?? []), row]);
+    const entry: FlowEntry = {
+      month: row.month,
+      deposits: Number(row.deposits),
+      withdrawals: Number(row.withdrawals),
+      closingBalance: row.closing_balance === null ? null : Number(row.closing_balance),
+      note: row.note,
+    };
+    entriesByAccount.set(row.account_id, [...(entriesByAccount.get(row.account_id) ?? []), entry]);
   }
 
-  return [...byInstitution.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([institution, rows]) => {
-      const accounts = accountsResult.data.filter((account) => (account.institution ?? "Other") === institution);
-      const months = buildMonths(rows, accounts.filter((account) => !account.archived_at).length);
-      const entered = months.filter((month) => month.entered);
-      return {
-        institution,
-        accountCount: accounts.length,
-        months,
-        years: buildYears(months),
-        kpis: buildKpis(months),
-        latestLabel: entered[entered.length - 1].label,
-      };
-    });
+  const accounts: AccountOption[] = accountsResult.data
+    .map((account) => ({
+      id: account.id,
+      name: account.name,
+      institution: account.institution ?? "Other",
+      entries: entriesByAccount.get(account.id) ?? [],
+    }))
+    .sort((a, b) => a.institution.localeCompare(b.institution) || a.name.localeCompare(b.name));
+
+  const dashboards = accounts.map((account) => {
+    const months = buildMonths(account.entries);
+    const latest = months[months.length - 1];
+    return {
+      accountId: account.id,
+      accountName: account.name,
+      institution: account.institution,
+      months,
+      years: buildYears(months),
+      kpis: buildKpis(months),
+      latestLabel: latest?.label ?? null,
+    };
+  });
+
+  const firstMonth = flowsResult.data[0]?.month;
+  return { accounts, dashboards, firstYear: firstMonth ? Number(firstMonth.slice(0, 4)) : currentYear };
 }
