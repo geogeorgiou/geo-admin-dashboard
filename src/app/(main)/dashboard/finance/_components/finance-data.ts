@@ -238,6 +238,8 @@ export async function getFinanceDashboard(): Promise<FinanceDashboard> {
 
   const entriesByAccount = new Map<string, FlowEntry[]>();
   for (const row of flowsResult.data) {
+    // View columns are typed nullable; the underlying monthly_flows columns are NOT NULL.
+    if (row.account_id === null || row.month === null) continue;
     const entry: FlowEntry = {
       month: row.month,
       deposits: Number(row.deposits),

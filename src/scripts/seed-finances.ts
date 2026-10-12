@@ -1,9 +1,9 @@
 // Seeds a household's monthly flows from a JSON export. Safe to re-run: every write is an upsert.
 //
-//   SEED_OWNER_EMAIL=you@example.com npm run seed:finances [-- path/to/monthly_flows.json]
+//   SEED_OWNER_EMAIL=you@example.com npm run seed:finances -- path/to/monthly_flows.json
 //
-// Reads NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY from .env.local. The default input,
-// supabase/seed/monthly_flows.json, is gitignored; see monthly_flows.example.json for the shape.
+// Reads NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY from .env.local. The input file holds real
+// finance data, so keep it out of git; see fileSchema below for the shape.
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -115,7 +115,8 @@ async function main() {
   if (!url || !secretKey) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SECRET_KEY in .env.local");
   if (!ownerEmail) throw new Error("Set SEED_OWNER_EMAIL to the household owner's email");
 
-  const inputPath = resolve(process.argv[2] ?? "supabase/seed/monthly_flows.json");
+  if (!process.argv[2]) throw new Error("Pass the monthly flows JSON path: npm run seed:finances -- <path>");
+  const inputPath = resolve(process.argv[2]);
   const { monthly_flows: flows } = fileSchema.parse(JSON.parse(readFileSync(inputPath, "utf8")));
 
   for (const flow of flows) {
