@@ -228,27 +228,10 @@ These serve as the fallback; there is no separate default.css file. */
   html[data-font="playfairDisplay"] body {
     --font-sans: var(--font-playfair-display);
   }
-
-  html body:has([data-landing-page]) {
-    --font-sans: var(--font-geist);
-  }
 }
 
 html {
   overscroll-behavior: none;
-}
-
-html:has([data-landing-page]) {
-  view-transition-name: none;
-}
-
-[data-landing-dashboard-preview] {
-  view-transition-name: landing-dashboard-preview;
-}
-
-::view-transition-group(landing-dashboard-preview) {
-  animation-duration: 360ms;
-  animation-timing-function: ease-out;
 }
 
 .disable-transitions * {

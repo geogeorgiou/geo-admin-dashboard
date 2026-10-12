@@ -5,6 +5,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 
 import { Search } from "lucide-react";
+import type { Route } from "next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +25,7 @@ type SearchItem = {
   id: string;
   group: string;
   label: string;
-  url: string;
+  url: Route;
   icon?: NavMainItem["icon"];
   disabled?: boolean;
   newTab?: boolean;

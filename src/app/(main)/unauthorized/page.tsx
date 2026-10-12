@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Lock } from "lucide-react";
 import type { Metadata } from "next";
 
+import { route } from "@/features/common/route";
+
 export const metadata: Metadata = {
   robots: {
     index: false,
@@ -22,7 +24,7 @@ export default function page() {
         </p>
         <div className="mt-6">
           <Link
-            href="dashboard"
+            href={route("/dashboard")}
             className="inline-flex items-center rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground text-sm shadow-xs transition-colors hover:bg-primary/90 focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2"
             prefetch={false}
           >

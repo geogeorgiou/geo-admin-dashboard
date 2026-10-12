@@ -20,6 +20,7 @@
 .DS_Store
 *.pem
 *.sh
+!/scripts/db/*.sh
 
 # debug
 npm-debug.log*
@@ -32,6 +33,14 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local Claude Code worktrees
+/.claude/worktrees/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# real finance data (the repo is public)
+/montly_flows.json
+*.backup
+/db-backup/
