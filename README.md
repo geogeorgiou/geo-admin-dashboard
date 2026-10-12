@@ -1,146 +1,106 @@
-# Next.js Admin Template with TypeScript & Shadcn UI
+# Geo Admin Dashboard
 
-**Studio Admin** - Includes multiple dashboards, authentication layouts, customizable theme presets, and more.
+A personal admin dashboard built with Next.js 16, React 19, TypeScript, Tailwind CSS v4, and shadcn/ui.
 
-<img src="https://github.com/arhamkhnz/next-shadcn-admin-dashboard/blob/main/media/dashboard.png?version=5" alt="Dashboard Screenshot">
-
-Most admin templates I found, free or paid, felt cluttered, outdated, or too rigid. I built this as a cleaner alternative with features often missing in others, such as theme toggling and layout controls, while keeping the design modern, minimal, and flexible.
-
-> **View demo:** [studio admin](https://studio-admin.arhamkhnz.com)
-
-> [!NOTE]
-> Looking for the Base UI version? Check out [next-shadcn-admin-dashboard-baseui](https://github.com/arhamkhnz/next-shadcn-admin-dashboard-baseui).
->
-> Looking for the React Aria version? Check out [arhamkhnz/next-shadcn-admin-dashboard-aria](https://github.com/arhamkhnz/next-shadcn-admin-dashboard-aria).
->
-> Looking for the TanStack Start version? Check out [tanstack-shadcn-admin-dashboard](https://github.com/arhamkhnz/tanstack-shadcn-admin-dashboard).
-
-> [!TIP]
-> I’m also working on Nuxt.js and Svelte versions of this dashboard. They’ll be live soon.
-
-## Features
-
-- Built with Next.js 16, TypeScript, Tailwind CSS v4, and Shadcn UI  
-- Responsive and mobile-friendly  
-- Customizable theme presets (light/dark modes with color schemes like Tangerine, Brutalist, and more)  
-- Flexible layouts (collapsible sidebar, variable content widths)  
-- Authentication flows and screens  
-- Prebuilt dashboards (Default, CRM, Finance, Analytics, Productivity) plus legacy variants  
-- Role-Based Access Control (RBAC) with config-driven UI and multi-tenant support *(planned)*  
-
-> [!NOTE]
-> The default dashboard uses the **shadcn neutral** theme.  
-> It also includes additional color presets inspired by [Tweakcn](https://tweakcn.com):  
->
-> - Tangerine  
-> - Neo Brutalism  
-> - Soft Pop  
->
-> You can create more presets by following the same structure as the existing ones.
-
-> Looking for the **Next.js 15** version?  
-> Check out the [`archive/next15`](https://github.com/arhamkhnz/next-shadcn-admin-dashboard/tree/archive/next15) branch.  
-> This branch contains the setup prior to upgrading to Next 16 and the React Compiler.
-
-> Looking for the **Next.js 14 + Tailwind CSS v3** version?  
-> Check out the [`archive/next14-tailwindv3`](https://github.com/arhamkhnz/next-shadcn-admin-dashboard/tree/archive/next14-tailwindv3) branch.  
-> It has a different color theme and is not actively maintained, but I try to keep it updated with major changes.  
-
-## Tech Stack
-
-- **Framework**: Next.js 16 (App Router), TypeScript, Tailwind CSS v4  
-- **UI Components**: Shadcn UI  
-- **Validation**: Zod  
-- **Forms & State Management**: React Hook Form, Zustand  
-- **Tables & Data Handling**: TanStack Table  
-- **Tooling & DX**: Biome, Husky  
+> [!IMPORTANT]
+> **Local state only.** This project runs on your machine against a local Supabase stack in Docker. It is not deployed
+> anywhere and has no hosted backend. The data lives in the local Docker volume and in gitignored backups under
+> `db-backup/`, and is never committed.
 
 ## Screens
 
-### Available
-- Default Dashboard  
-- CRM Dashboard  
-- Finance Dashboard  
-- Analytics Dashboard  
-- Productivity Dashboard  
-- E-commerce Dashboard  
-- Academy Dashboard  
-- Logistics Dashboard  
-- Infrastructure Dashboard  
-- File Manager  
-- Patient Monitoring  
-- Chat Page  
-- Email Page  
-- Profile  
-- Users Management  
-- Roles Management  
-- Kanban Board  
-- Tasks Page  
-- Invoice Page  
-- Calendar Page  
-- Authentication (4 screens)  
-- Legacy: Default v1, CRM v1, Finance v1, Analytics v1
+- **Finance**: household accounts and monthly flows, read from and written to the local Supabase database
+- **Default**, **CRM**, **Analytics**, **Productivity**: dashboards with static sample data
 
-### Planned
-I’ve added all the planned screens. Feel free to open an issue for requesting something specific.
+Theme presets (neutral, Tangerine, Neo Brutalism, Soft Pop), light/dark mode, and layout controls (collapsible sidebar,
+content width) are built in.
 
-## Colocation File System Architecture
+## Tech Stack
 
-This project follows a **colocation-based architecture** each feature keeps its own pages, components, and logic inside its route folder.  
-Shared UI, hooks, and configuration live at the top level, making the codebase modular, scalable, and easier to maintain as the app grows.
-
-For a full breakdown of the structure with examples, see the [Next Colocation Template](https://github.com/arhamkhnz/next-colocation-template).
+- **Framework**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4
+- **UI**: shadcn/ui
+- **Data**: Supabase (local stack via the Supabase CLI)
+- **Validation & forms**: Zod, React Hook Form
+- **State & tables**: Zustand, TanStack Table
+- **Tooling**: Biome, Husky
 
 ## Getting Started
 
-You can run this project locally, or deploy it instantly with Vercel.
+### Prerequisites
 
-### Deploy with Vercel
+- Node.js and npm
+- Docker (running)
+- [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Farhamkhnz%2Fnext-shadcn-admin-dashboard)
+### Setup
 
-_Deploy your own copy with one click._
-
-### Run locally
-
-1. **Clone the repository**
+1. **Install dependencies**
    ```bash
-   git clone https://github.com/arhamkhnz/next-shadcn-admin-dashboard.git
-   ```
-   
-2. **Navigate into the project**
-   ```bash
-    cd next-shadcn-admin-dashboard
-   ```
-   
-3. **Install dependencies**
-   ```bash
-    npm install
+   npm install
    ```
 
-4. **Start the development server**
+2. **Add the database backup.** Put a Supabase cluster backup (the dashboard's "Download backup" file) at
+   `db-backup/hosted-export.backup`. Skip this to start with an empty database.
+
+3. **Start Supabase.** On an empty database this restores the newest backup (see below).
+   ```bash
+   npm run db:start
+   ```
+
+4. **Point the app at the local stack.** Create `.env.local` from the values printed by `supabase status`:
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<PUBLISHABLE_KEY>
+   SUPABASE_DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+   SUPABASE_SECRET_KEY=<SECRET_KEY>
+   ```
+
+5. **Start the app**
    ```bash
    npm run dev
    ```
 
-Your app will be running at [http://localhost:3000](http://localhost:3000)
+The app runs at [http://localhost:3000](http://localhost:3000). Supabase Studio is at
+[http://127.0.0.1:54323](http://127.0.0.1:54323).
 
-### Formatting and Linting
+## Database
 
-Format, lint, and organize imports
+`db-backup/` is the source of truth for the database. It is gitignored and holds:
+
+- `<ISO date>_db_cluster.backup`: snapshots of the local database; the newest one wins
+- `hosted-export.backup`: the original export, used only when there are no snapshots
+
+| Command               | What it does                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| `npm run db:start`    | Starts the stack. Restores the newest backup only when the database is empty.        |
+| `npm run db:stop`     | Snapshots, then stops the stack. Data also stays in the Docker volume.               |
+| `npm run db:snapshot` | Writes a new dated snapshot without stopping.                                        |
+| `npm run db:reset`    | Snapshots, wipes the Docker volume, and restores the newest backup.                  |
+| `npm run db:types`    | Regenerates `src/lib/supabase/database.types.ts` from the local database.            |
+
+The last 30 snapshots are kept; `hosted-export.backup` is never pruned. Stop with `npm run db:stop` rather than quitting
+Docker so the latest changes reach `db-backup/`.
+
+**Rolling back:** move away the snapshots newer than the one you want, then wipe and restart:
+
 ```bash
-npx @biomejs/biome check --write
+supabase stop --no-backup && npm run db:start
 ```
-> For more information on available rules, fixes, and CLI options, refer to the [Biome documentation](https://biomejs.dev/).
 
----
+Avoid `db:reset` for a rollback: its snapshot would become the newest backup.
 
-> [!IMPORTANT]  
-> This project is updated frequently. If you’re working from a fork or an older clone, pull the latest changes before syncing. Some updates may include breaking changes.
+## Development
 
----
+```bash
+npm run check       # Biome lint + format check
+npm run check:fix   # apply fixes
+npm run build       # production build
+```
 
-Contributions are welcome. Feel free to open issues, feature requests, or start a discussion.
+Feature code stays next to the route that owns it (`src/app/(main)/dashboard/<screen>/_components/`), with shared UI,
+hooks, and utilities at the top level. See [AGENTS.md](AGENTS.md) for conventions.
 
+## Credits
 
-**Happy Vibe Coding!**
+Based on [Studio Admin](https://github.com/arhamkhnz/next-shadcn-admin-dashboard) by Mohammed Arham Khan, MIT
+licensed. See [LICENSE](LICENSE).
