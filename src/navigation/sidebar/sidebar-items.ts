@@ -1,11 +1,14 @@
 import { Banknote, ChartBar, Gauge, LayoutDashboard, ListTodo, type LucideIcon } from "lucide-react";
+import type { Route } from "next";
+
+import { route } from "@/features/common/route";
 
 export type NavBadge = "new" | "soon";
 
 export interface NavSubItem {
   id: string;
   title: string;
-  url: string;
+  url: Route;
   icon?: LucideIcon;
   badge?: NavBadge;
   disabled?: boolean;
@@ -22,7 +25,7 @@ interface NavItemBase {
 }
 
 export interface NavMainLinkItem extends NavItemBase {
-  url: string;
+  url: Route;
   subItems?: never;
 }
 
@@ -45,31 +48,31 @@ export const sidebarItems: NavGroup[] = [
       {
         id: "default",
         title: "Default",
-        url: "/dashboard/default",
+        url: route("/dashboard/default"),
         icon: LayoutDashboard,
       },
       {
         id: "crm",
         title: "CRM",
-        url: "/dashboard/crm",
+        url: route("/dashboard/crm"),
         icon: ChartBar,
       },
       {
         id: "finance",
         title: "Finance",
-        url: "/dashboard/finance",
+        url: route("/dashboard/finance"),
         icon: Banknote,
       },
       {
         id: "analytics",
         title: "Analytics",
-        url: "/dashboard/analytics",
+        url: route("/dashboard/analytics"),
         icon: Gauge,
       },
       {
         id: "productivity",
         title: "Productivity",
-        url: "/dashboard/productivity",
+        url: route("/dashboard/productivity"),
         icon: ListTodo,
       },
     ],

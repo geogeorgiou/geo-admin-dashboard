@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { route } from "@/features/common/route";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { formatEur } from "./format";
@@ -47,7 +48,7 @@ export async function saveMonthlyFlow(input: MonthlyFlowFormValues): Promise<Act
   // Work in cents to avoid floating-point drift.
   const net = (Math.round(deposits * 100) - Math.round(withdrawals * 100)) / 100;
 
-  revalidatePath("/dashboard/finance");
+  revalidatePath(route("/dashboard/finance"));
   return {
     ok: true,
     message: `Saved ${labelOf(month)} for ${account.data.name} · net ${formatEur(net, { signed: true })}`,
@@ -70,6 +71,6 @@ export async function deleteMonthlyFlow(input: DeleteMonthlyFlowValues): Promise
   if (error) return { ok: false, error: `Failed to delete monthly flow: ${error.message}` };
   if (data.length === 0) return { ok: false, error: `${labelOf(month)} was already deleted.` };
 
-  revalidatePath("/dashboard/finance");
+  revalidatePath(route("/dashboard/finance"));
   return { ok: true, message: `Deleted ${labelOf(month)}` };
 }
